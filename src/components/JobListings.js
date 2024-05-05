@@ -6,23 +6,18 @@ import Filters from './Filters';
 
 const JobListings = () => {
   const [jobs, setJobs] = useState([]);
+  const [originalJobs, setOriginalJobs] = useState([]); // State to hold the original array of jobs
   const [hasMore, setHasMore] = useState(true);
   const [limit, setLimit] = useState(10);
   const [offset, setOffset] = useState(0);
-  const [filters, setFilters] = useState({
-    minExperience: '',
-    companyName: '',
-    location: '',
-    remote: '',
-    techStack: '',
-    role: '',
-    minBasePay: '',
-  });
 
   useEffect(() => {
     fetchData();
-    filterData(filters)
-  }, [limit, offset,filters]);
+  }, [limit, offset]);
+
+  useEffect(() => {
+    fetchData();
+  }, [jobs]);
 
   const fetchData = async () => {
     try {
@@ -31,45 +26,51 @@ const JobListings = () => {
         offset,
       });
   
-      let filteredJobs = response.data.jdList;
+      const newJobs = response.data.jdList;
   
-      setJobs(filteredJobs);
+      setJobs(newJobs);
+      if (offset === 0) {
+        setOriginalJobs(newJobs); // Save the original array of jobs only when offset is 0
+      }
       setHasMore(false); // Since we're filtering locally, no need for hasMore
     } catch (error) {
       console.error('Error fetching data:', error);
     }
   };
 
-  const filterData = (filters) =>{
-    // Apply filters locally
-    if (filters.minExperience !== '') {
-       setJobs(jobs.filter(job => job.experience >= parseInt(filters.minExperience)));
-    }
-    if (filters.companyName !== '') {
-      setJobs(jobs.filter(job => job.companyName === filters.companyName));
-    }
-    if (filters.location !== '') {
-      setJobs(jobs.filter(job => job.location === filters.location));
-    }
-    if (filters.remote !== '') {
-      setJobs(jobs.filter(job => job.remote === filters.remote));
-    }
-    if (filters.techStack !== '') {
-      setJobs(jobs.filter(job => job.techStack.includes(filters.techStack)));
-    }
-    if (filters.role !== '') {
-      setJobs(jobs.filter(job => job.role === filters.role));
-    }
-    if (filters.minBasePay !== '') {
-      setJobs(jobs.filter(job => job.basePay >= parseInt(filters.minBasePay)));
-    }
-  }
-  
-
   const handleFilterChange = (newFilters) => {
-    setFilters(newFilters);
-    // Filter data
-    // filterData(newFilters)
+    // Check if all filters are empty
+    const allFiltersEmpty = Object.values(newFilters).every(filter=>filter.length===0);
+
+    if (allFiltersEmpty) {
+      // If all filters are empty, restore the original jobs
+      setJobs(originalJobs);
+    } else {
+      // Apply filters locally
+      let filteredJobs = [...originalJobs]; // Use originalJobs instead of jobs
+
+      if (newFilters.minExperience !== '') {
+        filteredJobs = filteredJobs.filter(job => job.experience >= parseInt(newFilters.minExperience));
+      }
+      if (newFilters.companyName !== '') {
+        filteredJobs = filteredJobs.filter(job => job.companyName === newFilters.companyName);
+      }
+      if (newFilters.length !== 0) {
+        filteredJobs = filteredJobs.filter(job => job.location === newFilters.remote.filter(item => item.toLowerCase() === job.location));
+      }
+      if (newFilters.techStack.length !== 0) {
+        filteredJobs = filteredJobs.filter(job => job.jobDetailsFromCompany.includes(newFilters.techStack[0]));
+      }
+      if (newFilters.role !== '') {
+        filteredJobs = filteredJobs.filter(job => job.role === newFilters.role);
+      }
+      if (newFilters.minBasePay !== '') {
+        filteredJobs = filteredJobs.filter(job => job.basePay >= parseInt(newFilters.minBasePay));
+      }
+
+      setJobs(filteredJobs);
+    }
+
     // Reset offset to 0 when filters change
     setOffset(0);
   };

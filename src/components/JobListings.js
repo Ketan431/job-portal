@@ -15,10 +15,6 @@ const JobListings = () => {
     fetchData();
   }, [limit, offset]);
 
-  useEffect(() => {
-    fetchData();
-  }, [jobs]);
-
   const fetchData = async () => {
     try {
       const response = await axios.post('https://api.weekday.technology/adhoc/getSampleJdJSON', {
@@ -32,7 +28,7 @@ const JobListings = () => {
       if (offset === 0) {
         setOriginalJobs(newJobs); // Save the original array of jobs only when offset is 0
       }
-      setHasMore(false); // Since we're filtering locally, no need for hasMore
+      setHasMore(true); // Since we're filtering locally, no need for hasMore
     } catch (error) {
       console.error('Error fetching data:', error);
     }
